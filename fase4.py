@@ -5,14 +5,8 @@ from abc import ABC, abstractmethod
 # clase abstracta que representa una entidad del sistema
 
 # Excepciones personalizadas
-class ErrorValidacion(Exception):
-    pass
-
-class ErrorTipo(ErrorValidacion):
-    pass
-
-class ErrorFormato(ErrorValidacion):
-    pass
+from excepciones import ErrorValidacion, ErrorTipo, ErrorFormato
+from logs import registrar_en_log
 class EntidadSistema(ABC):
     def __init__(self):
         # generamos un identificador unico para la entidad
@@ -41,7 +35,7 @@ class Cliente(EntidadSistema):
     
     # metodo que retorna el identificador unico del cliente
     def getIdentificacion(self):
-        return self.super().getIdEntidad()
+        return super().getIdEntidad()
     
     # metodo que permite editar la informacion del cliente, validando los datos antes de actualizarlos
     def editarInformacion(self, nombre=None, documento=None, correo=None, telefono=None):
@@ -88,21 +82,123 @@ class Cliente(EntidadSistema):
 
         except TypeError as e:
              # Encadenamiento de excepciones: convertimos el error técnico en excepción personalizada
+            registrar_en_log(f"Error de tipo en cliente: {str(e)}")
             raise ErrorTipo(f"Error de tipo en datos del cliente: {e}") from e
         except ValueError as e:
+            registrar_en_log(f"Error de validacion en cliente: {str(e)}")
             # Si el mensaje menciona 'formato' o 'números', lanzamos ErrorFormato; si no, ErrorValidacion
             if "formato" in str(e) or "numeros" in str(e):
                 raise ErrorFormato(f"Error de formato en datos del cliente: {e}") from e
             raise ErrorValidacion(f"Error de validacion en datos del cliente: {e}") from e
         else:
             return True # Si no hay errores, la validación es exitosa
-        
-# creamos una instancia de la clase cliente para probar la funcionalidad
-prueba1 = Cliente("Federico Pelaez", "1104938557","federicopelaez@ejemplo.com", "3115060154")
-# mostramos el identificador unico y la informacion del cliente
-print(f"Identificador del cliente: {prueba1.getIdEntidad()}")
-print(f"Informacion del cliente: {prueba1.getInformacion()}")
 
-# craemos otra instancia de la clase cliente para probar la funcionalidad con datos erroneos y capturamos la excepcion personalizada
-prueba2 = Cliente("Fe", "11#4938557","federicopelaez", "311506#154")
+class Servicio(EntidadSistema):
+    def __init__(self, nombre, descripcion, tarifa_base, disponible, estado_servicio):
+        super().__init__()
+        # validamos los parametros del servicio antes de asignarlos
+        self.validarBase(nombre, descripcion, tarifa_base, disponible, estado_servicio)
+        # generamos un identificador unico para el servicio
+        self.__nombre = nombre
+        self.__descripcion = descripcion
+        self.__tarifa_base = tarifa_base
+        self.__disponible = disponible
+        self.__estado_servicio = estado_servicio
+
+    #getters
+    def getNombre(self): return self.__nombre
+    def getDescripcion(self): return self.__descripcion
+    def getTarifaBase(self): return self.__tarifa_base
+    def getDisponible(self): return self.__disponible
+    def getEstadoServicio(self): return self.__estado_servicio
+    def getInformacion(self):
+        return [self.__nombre, self.__descripcion, self.__tarifa_base, self.__disponible, self.__estado_servicio]
+
+    # metodo para validar los parametros del servicio antes de asignarlos
+    def validarBase(self, nombre, descripcion, tarifa_base, disponible, estado_servicio):
+        try:
+            if not isinstance(nombre, str):
+                raise TypeError("El nombre debe ser una cadena de texto.")
+            if len(nombre.strip()) < 3:
+                raise ValueError("El nombre debe tener al menos 3 caracteres.")
+            if not isinstance(descripcion, str):
+                raise TypeError("La descripcion debe ser una cadena de texto.")
+            if len(descripcion.strip()) < 10:
+                raise ValueError("La descripcion debe tener al menos 10 caracteres.")
+            if not isinstance(tarifa_base, bool) or not isinstance(tarifa_base, (int, float)):
+                raise TypeError("La tarifa base debe ser un numero.")
+            if tarifa_base <= 0:
+                raise ValueError("La tarifa base debe ser mayor a 0.")
+           
+            if not isinstance(disponible, bool):
+                raise TypeError("El estado de disponibilidad debe ser True o False.")
+         
+            if not isinstance(estado_servicio, str):
+                raise TypeError("El estado del servicio debe ser una cadena de texto.")
+            if estado_servicio not in ["Activo", "Inactivo"]:
+                raise ValueError("El estado del servicio debe ser 'Activo' o 'Inactivo'.")
+
+        except TypeError as e:
+            registrar_en_log(f"Error de tipo en servicio: {str(e)}")
+            raise ErrorTipo(f"Error de tipo en datos del servicio: {e}") from e
+        except ValueError as e:
+            registrar_en_log(f"Error de validacion en servicio: {str(e)}")
+            raise ErrorValidacion(f"Error de validacion en datos del servicio: {e}") from e
+    # tres metodos abstractos calcularCosto, describirServicio y validarParametros
+    @abstractmethod
+    def calcularCosto(self):
+        pass
+    @abstractmethod
+    def describirServicio(self):
+        pass
+    @abstractmethod
+    def validarParametros(self):
+        pass
+        
+class Sala(Servicio):
+    def __init__(self, nombre, descripcion, tarifa_base, disponible, estado_servicio, capacidad, ubicacion):
+        super().__init__(nombre, descripcion, tarifa_base, disponible, estado_servicio)
+        self.validarParametros(capacidad, ubicacion)
+        self.__capacidad = capacidad
+        self.__ubicacion = ubicacion
+
+    def validarParametros(self, capacidad, ubicacion):
+        try:
+            if isinstance(capacidad, bool) or not isinstance(capacidad, int):
+                raise TypeError("La capacidad debe ser un entero.")
+            if capacidad <= 0:
+                raise ValueError("La capacidad debe ser mayor a 0.")
+            if not isinstance(ubicacion, str) or not ubicacion.strip():
+                raise TypeError("La ubicacion debe ser texto no vacio.")
+        except TypeError as e:
+            registrar_en_log(f"Error de validacion en sala: {str(e)}")
+            raise ErrorTipo(f"Error de tipo en datos de la sala: {e}") from e
+        except ValueError as e:
+            registrar_en_log(f"Error de validacion en sala: {str(e)}")
+            raise ErrorValidacion(f"Error de validacion en datos de la sala: {e}") from e
+
+    # sobrecarga con parametros opcionales
+    def calcularCosto(self, horas, impuesto = 0.0, descuento = 0.0):
+        costo = self.getTarifaBase() * horas
+        costo -= costo * descuento # descuento: 0.10 = 10 %
+        costo += costo * impuesto # impuesto: 0.19 = 19 %
+        return costo
+    # describir servicio 
+    def describirServicio(self):
+        return (f"Sala '{self.getNombre()}' en {self.__ubicacion},"
+                f"capacidad {self.__capacidad} personas.")
+            
+if __name__ == "__main__":
+    # creamos una instancia de la clase cliente para probar la funcionalidad
+    prueba1 = Cliente("Federico Pelaez", "1104938557","federicopelaez@ejemplo.com", "3115060154")
+    # mostramos el identificador unico y la informacion del cliente
+    print(f"Identificador del cliente: {prueba1.getIdEntidad()}")
+    print(f"Informacion del cliente: {prueba1.getInformacion()}")
+
+    # craemos otra instancia de la clase cliente para probar la funcionalidad con datos erroneos y capturamos la excepcion personalizada
+    try:
+       prueba2 = Cliente("Fe", "11#4938557","federicopelaez", "311506#154")
+    except Exception as e:
+       print(f"Error controlado: {e}")
+
 

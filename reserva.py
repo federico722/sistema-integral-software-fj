@@ -43,7 +43,7 @@ class Reserva:
 
     def confirmar_reserva(self):
         """Cambia el estado a Confirmada, con manejo de excepciones"""
-    try:
+        try:
             if self.estado == "Cancelada":
                 raise OperacionNoPermitida("No se puede confirmar una reserva que ya fue cancelada.")
             
@@ -53,9 +53,9 @@ class Reserva:
             print(f"Reserva confirmada. Costo total: ${self.costo_total}")
             
             # Aquí está la línea del log corregida y sin símbolos raros
-            registrar_en_log(f"EVENTO: Reserva confirmada para {self.cliente} por {self.duracion_horas} horas.")
+            registrar_en_log(f"EVENTO: Reserva confirmada para {self.cliente} por {self.duracion_horas} horas.") 
             
-    except OperacionNoPermitida as e:
+        except OperacionNoPermitida as e:
             registrar_en_log(f"ERROR: {str(e)}")
             print(f"Error: {e}")
 
