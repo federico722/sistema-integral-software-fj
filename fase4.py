@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 # clase abstracta que representa una entidad del sistema
 
 # Excepciones personalizadas
-from excepciones import ErrorValidacion, ErrorTipo, ErrorFormato
+from excepciones import ErrorValidacion, ErrorTipo, ErrorFormato, OperacionNoPermitida
 from logs import registrar_en_log
 class EntidadSistema(ABC):
     def __init__(self):
@@ -154,6 +154,29 @@ class Servicio(EntidadSistema):
     @abstractmethod
     def validarParametros(self):
         pass
+
+    # metodo para validar la entrada de descuento, impuesto y horas 
+    def _validarCalculo(self, horas, impuesto, descuento):
+        try:
+            if isinstance(horas, bool) or not isinstance(horas, (int, float)):
+                raise TypeError("Las horas deben ser un numero.")
+            if isinstance(impuesto, bool) or not isinstance(impuesto, (int, float)):
+                raise TypeError("El impuesto debe ser un numero.")
+            if isinstance(descuento, bool) or not isinstance(descuento, (int, float)):
+                raise TypeError("El descuento debe ser un numero.")
+            if horas <= 0:
+                raise ValueError("Las horas deben ser mayores a 0.")
+            if not 0 <= impuesto <= 1:
+                raise ValueError("El impuesto debe estar entre 0 y 1.")
+            if not 0 <= descuento <= 1:
+                raise ValueError("El descuento debe estar entre 0 y 1.")
+        except TypeError as e:
+            registrar_en_log(f"Error de tipo en calculo de costo: {self.getNombre()}: {e}")
+            raise ErrorTipo(f"Error de tipo en el calculo de costo: {e}") from e
+        except ValueError as e:
+            registrar_en_log(f"Error de validacion en el calculo de costo: {self.getNombre()}: {e}")
+            raise ErrorValidacion(f"Error de validacion en el calculo de costo: {e}") from e
+        
         
 class Sala(Servicio):
     def __init__(self, nombre, descripcion, tarifa_base, disponible, estado_servicio, capacidad, ubicacion):
@@ -179,6 +202,7 @@ class Sala(Servicio):
 
     # sobrecarga con parametros opcionales
     def calcularCosto(self, horas, impuesto = 0.0, descuento = 0.0):
+        self._validarCalculo(horas, impuesto, descuento)
         costo = self.getTarifaBase() * horas
         costo -= costo * descuento # descuento: 0.10 = 10 %
         costo += costo * impuesto # impuesto: 0.19 = 19 %
@@ -187,6 +211,45 @@ class Sala(Servicio):
     def describirServicio(self):
         return (f"Sala '{self.getNombre()}' en {self.__ubicacion},"
                 f"capacidad {self.__capacidad} personas.")
+
+class Equipo(Servicio):
+    def __init__(self, nombre, descripcion, tarifa_base, disponible, estado_servicio, tipo_equipo, cantidad_disponible):
+        super().__init__(nombre, descripcion, tarifa_base, disponible, estado_servicio)
+        self.validarParametros(tipo_equipo, cantidad_disponible)
+        self.__tipo_equipo = tipo_equipo
+        self.__cantidad_disponible = cantidad_disponible
+
+    def validarParametros(self, tipo_equipo, cantidad_disponible):
+        try:
+            if not isinstance(tipo_equipo, str) or not tipo_equipo.strip():
+                raise TypeError("El tipo de equipo debe ser texto no vacio.")
+            if isinstance(cantidad_disponible, bool) or not isinstance(cantidad_disponible, int): 
+                raise TypeError("La cantidad disponible debe ser un entero.")
+            if cantidad_disponible < 0:
+                raise ValueError("La cantidad disponible no puede ser negativa.")
+        except TypeError as e:
+            registrar_en_log(f"Error de tipo en equipo: {str(e)}")
+            raise ErrorTipo(f"Error de tipo en datos del equipo: {e}") from e
+        except ValueError as e:
+            registrar_en_log(f"Error de validacion en equipo: {str(e)}")
+            raise ErrorValidacion(f"Error de validacion en datos del equipo: {e}") from e
+
+    def calcularCosto(self, horas, impuesto = 0.0, descuento = 0.0, unidades=1):
+        self._validarCalculo(horas, impuesto, descuento)
+        if unidades > self.__cantidad_disponible:
+            registrar_en_log(f"Se pidieron {unidades} unidades de {self.getNombre()} "
+                             f"y solo hay {self.__cantidad_disponible}.")
+            raise OperacionNoPermitida(
+                f"Solo hay {self.__cantidad_disponible} unidades disponibles.")
+        costo = self.getTarifaBase() * horas * unidades
+        costo -= costo * descuento
+        costo += costo * impuesto
+        return costo
+    
+    def describirServicio(self):
+        return (f"Equipo '{self.getNombre()}' de tipo {self.__tipo_equipo}, "
+                f"cantidad disponible: {self.__cantidad_disponible}.")
+            
             
 if __name__ == "__main__":
     # creamos una instancia de la clase cliente para probar la funcionalidad
