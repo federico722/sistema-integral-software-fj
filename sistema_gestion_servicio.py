@@ -1,17 +1,20 @@
 
 from fase4 import Servicio
 from logs import registrar_en_log
-
+from excepciones import ErrorValidacion, ErrorTipo, ServicioNoEncontrado
 
 class SistemaGestionServicio:
 
     def __init__(self):
         self.__servicios = []
-
+    # registrar servicios 
     def registrarServicio(self, servicio):
         try:
+            if self.verificarServicioExistente(servicio.getNombre()):
+                registrar_en_log(f"Intento de registrar servicio duplicado: {servicio.getNombre()}")
+                raise ErrorValidacion("Ya existe un servicio con ese nombre.")
             if not isinstance(servicio, Servicio):
-                raise TypeError("El objeto debe ser un servicio válido.")
+                raise ErrorTipo("El objeto debe ser un servicio válido.")
 
             identificacion = servicio.getIdEntidad()
 
@@ -46,7 +49,7 @@ class SistemaGestionServicio:
     def listarServiciosDisponibles(self):
         return [
             servicio for servicio in self.__servicios
-            if servicio.getDisponible()
+            if servicio.puedeReservarse()
         ]
 
     def eliminarServicio(self, identificacion):
@@ -54,7 +57,7 @@ class SistemaGestionServicio:
             servicio = self.buscarServicio(identificacion)
 
             if servicio is None:
-                raise ValueError("No se encontró el servicio solicitado.")
+                raise ServicioNoEncontrado("No se encontró el servicio solicitado.")
 
             self.__servicios.remove(servicio)
             return True
@@ -71,3 +74,7 @@ class SistemaGestionServicio:
             servicio.getInformacion()
             for servicio in self.__servicios
         ]
+    
+    # verificar si el servicio esta disponible
+    def verificarServicioExistente(self, identificacion):
+        return self.buscarServicio(identificacion) is not None

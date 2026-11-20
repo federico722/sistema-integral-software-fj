@@ -1,5 +1,7 @@
 
-from fase4 import Servicio
+from servicio import Servicio
+from excepciones import ErrorValidacion, ErrorTipo
+from logs import registrar_en_log
 
 
 class Asesoria(Servicio):
@@ -16,21 +18,25 @@ class Asesoria(Servicio):
         self.__especialidad = especialidad
         self.__modalidad = modalidad
         self.__duracion_minutos = duracion_minutos
-
+    # validamos parametros de la entrada de variables: especialidad, modalidad y duracion_minutos
     def validarParametros(self, especialidad, modalidad, duracion_minutos):
-
-        if not isinstance(especialidad, str) or not especialidad.strip():
-            raise ValueError("La especialidad debe ser un texto válido.")
-
-        if modalidad not in ("Presencial", "Virtual"):
-            raise ValueError("La modalidad debe ser Presencial o Virtual.")
-
-        if (isinstance(duracion_minutos, bool)
-                or not isinstance(duracion_minutos, int)
-                or duracion_minutos <= 0):
-            raise ValueError("La duración debe ser un número entero positivo.")
-
-        return True
+        try:
+            if not isinstance(especialidad, str) or not especialidad.strip():
+                raise TypeError("La especialidad debe ser un texto no vacio.")
+            if not isinstance(modalidad, str):
+                raise TypeError("La modalidad debe ser un texto.")
+            if modalidad not in ("Presencial", "Virtual"):
+                raise ValueError("La modalidad debe ser 'Presencial' o 'Virtual'.")
+            if isinstance(duracion_minutos, bool) or not isinstance(duracion_minutos, int):
+                raise TypeError("La duracion debe ser un entero.")
+            if duracion_minutos <= 0:
+                raise ValueError("La duracion debe ser mayor a 0.")
+        except TypeError as e:
+            registrar_en_log(f"Error de tipo en asesoria: {e}")
+            raise ErrorTipo(f"Error de tipo en datos de la asesoria: {e}") from e
+        except ValueError as e:
+            registrar_en_log(f"Error de validacion en asesoria: {e}")
+            raise ErrorValidacion(f"Error de validacion en datos de la asesoria: {e}") from e
 
     def calcularCosto(self, horas, impuesto=0.0, descuento=0.0):
 
@@ -61,3 +67,6 @@ class Asesoria(Servicio):
 
     def getDuracionMinutos(self):
         return self.__duracion_minutos
+
+    def getInformacion(self):
+        return super().getInformacion() + [self.__especialidad, self.__modalidad, self.__duracion_minutos]
