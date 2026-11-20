@@ -125,7 +125,7 @@ class Servicio(EntidadSistema):
                 raise TypeError("La descripcion debe ser una cadena de texto.")
             if len(descripcion.strip()) < 10:
                 raise ValueError("La descripcion debe tener al menos 10 caracteres.")
-            if not isinstance(tarifa_base, bool) or not isinstance(tarifa_base, (int, float)):
+            if isinstance(tarifa_base, bool) or not isinstance(tarifa_base, (int, float)):
                 raise TypeError("La tarifa base debe ser un numero.")
             if tarifa_base <= 0:
                 raise ValueError("La tarifa base debe ser mayor a 0.")
@@ -194,7 +194,7 @@ class Sala(Servicio):
             if not isinstance(ubicacion, str) or not ubicacion.strip():
                 raise TypeError("La ubicacion debe ser texto no vacio.")
         except TypeError as e:
-            registrar_en_log(f"Error de validacion en sala: {str(e)}")
+            registrar_en_log(f"Error de Tipo en sala: {str(e)}")
             raise ErrorTipo(f"Error de tipo en datos de la sala: {e}") from e
         except ValueError as e:
             registrar_en_log(f"Error de validacion en sala: {str(e)}")
@@ -209,7 +209,7 @@ class Sala(Servicio):
         return costo
     # describir servicio 
     def describirServicio(self):
-        return (f"Sala '{self.getNombre()}' en {self.__ubicacion},"
+        return (f"Sala '{self.getNombre()}' en {self.__ubicacion}, "
                 f"capacidad {self.__capacidad} personas.")
 
 class Equipo(Servicio):
@@ -218,7 +218,7 @@ class Equipo(Servicio):
         self.validarParametros(tipo_equipo, cantidad_disponible)
         self.__tipo_equipo = tipo_equipo
         self.__cantidad_disponible = cantidad_disponible
-
+    # metodo para validar los parametros del equipo antes de asignarlos
     def validarParametros(self, tipo_equipo, cantidad_disponible):
         try:
             if not isinstance(tipo_equipo, str) or not tipo_equipo.strip():
@@ -233,9 +233,12 @@ class Equipo(Servicio):
         except ValueError as e:
             registrar_en_log(f"Error de validacion en equipo: {str(e)}")
             raise ErrorValidacion(f"Error de validacion en datos del equipo: {e}") from e
-
+    # sobrecarga con parametros opcionales y validacion de unidades
     def calcularCosto(self, horas, impuesto = 0.0, descuento = 0.0, unidades=1):
         self._validarCalculo(horas, impuesto, descuento)
+        if isinstance(unidades, bool) or not isinstance(unidades, int) or unidades <= 0:
+            registrar_en_log(f"Unidades invalidas en {self.getNombre()}: {unidades}")
+            raise ErrorValidacion("Las unidades deben ser un entero mayor a 0.") 
         if unidades > self.__cantidad_disponible:
             registrar_en_log(f"Se pidieron {unidades} unidades de {self.getNombre()} "
                              f"y solo hay {self.__cantidad_disponible}.")
@@ -245,23 +248,63 @@ class Equipo(Servicio):
         costo -= costo * descuento
         costo += costo * impuesto
         return costo
-    
+    # metodo para describir el servicio de equipo
     def describirServicio(self):
         return (f"Equipo '{self.getNombre()}' de tipo {self.__tipo_equipo}, "
                 f"cantidad disponible: {self.__cantidad_disponible}.")
             
-            
-if __name__ == "__main__":
-    # creamos una instancia de la clase cliente para probar la funcionalidad
-    prueba1 = Cliente("Federico Pelaez", "1104938557","federicopelaez@ejemplo.com", "3115060154")
-    # mostramos el identificador unico y la informacion del cliente
-    print(f"Identificador del cliente: {prueba1.getIdEntidad()}")
-    print(f"Informacion del cliente: {prueba1.getInformacion()}")
 
-    # craemos otra instancia de la clase cliente para probar la funcionalidad con datos erroneos y capturamos la excepcion personalizada
+def probar(titulo, accion):
+    print(f"\n--- {titulo} ---")
     try:
-       prueba2 = Cliente("Fe", "11#4938557","federicopelaez", "311506#154")
+         print(f"OK: {accion()}")
     except Exception as e:
-       print(f"Error controlado: {e}")
+        print(f"Error controlado ({type(e).__name__}): {e}")
+        
+if __name__ == "__main__":
+    # ===== Casos validos =====
+    sala = Sala("Sala Norte", "Sala de juntas con proyector", 50000, True, "Activo", 10, "Piso 2")
+    equipo = Equipo("Proyector HD", "Proyector portatil para presentaciones", 20000, True, "Activo", "Proyector", 5)
+
+    probar("1. Describir sala", lambda: sala.describirServicio())
+    probar("2. Describir equipo", lambda: equipo.describirServicio())
+    probar("3. Costo sala 2h (sin extras)", lambda: sala.calcularCosto(2))
+    probar("4. Costo sala 2h, IVA 19% y descuento 10%",
+           lambda: round(sala.calcularCosto(2, impuesto=0.19, descuento=0.10), 2))
+    probar("5. Costo equipo 3h x 2 unidades", lambda: equipo.calcularCosto(3, unidades=2))
+    probar("6. Costo equipo con IVA y descuento",
+           lambda: round(equipo.calcularCosto(3, impuesto=0.19, descuento=0.10, unidades=2), 2))
+
+    # ===== Errores al crear servicios =====
+    probar("7. Tarifa negativa",
+           lambda: Sala("Sala Sur", "Sala pequena para reuniones", -100, True, "Activo", 5, "Piso 1"))
+    probar("8. Tarifa como texto",
+           lambda: Sala("Sala Sur", "Sala pequena para reuniones", "cien", True, "Activo", 5, "Piso 1"))
+    probar("9. Nombre demasiado corto",
+           lambda: Equipo("PC", "Computador de escritorio completo", 15000, True, "Activo", "Computador", 3))
+    probar("10. Estado de servicio invalido",
+           lambda: Sala("Sala Este", "Sala amplia con tablero", 40000, True, "Roto", 8, "Piso 3"))
+    probar("11. Capacidad en cero",
+           lambda: Sala("Sala Oeste", "Sala sin sillas todavia", 40000, True, "Activo", 0, "Piso 3"))
+    probar("12. Capacidad como texto",
+           lambda: Sala("Sala Oeste", "Sala sin sillas todavia", 40000, True, "Activo", "diez", "Piso 3"))
+    probar("13. Cantidad de equipos negativa",
+           lambda: Equipo("Camara", "Camara profesional de video", 30000, True, "Activo", "Camara", -2))
+
+    # ===== Errores en el calculo de costos =====
+    probar("14. Horas negativas", lambda: sala.calcularCosto(-1))
+    probar("15. Descuento absurdo (300%)", lambda: sala.calcularCosto(2, descuento=3))
+    probar("16. Impuesto como texto", lambda: sala.calcularCosto(2, impuesto="19"))
+    probar("17. Mas unidades de las disponibles", lambda: equipo.calcularCosto(2, unidades=10))
+    probar("18. Unidades en cero", lambda: equipo.calcularCosto(2, unidades=0))
+
+    # ===== Abstraccion y polimorfismo =====
+    probar("19. Instanciar la clase abstracta Servicio",
+           lambda: Servicio("Algo", "Descripcion de prueba", 1000, True, "Activo"))
+
+    print("\n--- 20. Polimorfismo: mismo metodo, distinto comportamiento ---")
+    for servicio in [sala, equipo]:
+        print(f"{type(servicio).__name__}: {servicio.describirServicio()}")
+
 
 
