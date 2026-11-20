@@ -6,14 +6,14 @@ from reserva import Reserva
 from logs import registrar_en_log
 from excepciones import ClienteNoEncontrado, ServicioNoEncontrado, OperacionNoPermitida
 
-class sistemaGestion:
+class SistemaGestion:
     """Conecta los tres gestores y coordina las reglas que involucran a mas de uno."""
 
     def __init__(self):
         # se crean UNA sola vez aqui, asi todos comparten las mismas listas
-        self.gestor_clientes = SistemaGestionCliente()
-        self.gestor_Servicios = SistemaGestionServicio()
-        self.gestor_reservas = SistemaGestionReserva()
+        self.__gestor_clientes = SistemaGestionCliente()
+        self.__gestor_servicios = SistemaGestionServicio()
+        self.__gestor_reservas = SistemaGestionReserva()
 
     def obtenerGestorClientes(self):
         return self.__gestor_clientes
@@ -21,7 +21,7 @@ class sistemaGestion:
     def obtenerGestorServicios(self):
         return self.__gestor_servicios
 
-    def obtenerGestorReserva(self):
+    def obtenerGestorReservas(self):
         return self.__gestor_reservas
 
     # ---------- operaciones que cruzan gestores ----------

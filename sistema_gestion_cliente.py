@@ -28,7 +28,7 @@ class SistemaGestionCliente:
     def buscarCliente(self, documento):
         try:
             for cliente in self.__clientes:
-                if cliente.getInformacion() == documento:
+                if cliente.getDocumento() == documento:
                     return cliente
             return None
 
@@ -50,7 +50,7 @@ class SistemaGestionCliente:
             if (nuevo_documento is not None
                     and nuevo_documento != documento
                     and self.buscarCliente(nuevo_documento) is not None):
-                raise ValueError("El nuevo documento ya está registrado.")
+                raise ErrorValidacion("El nuevo documento ya está registrado.")
 
             cliente.editarInformacion(
                 nombre=nombre,

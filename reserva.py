@@ -7,8 +7,9 @@ from logs import registrar_en_log
 from excepciones import (ErrorSistema, ReservaInvalida, ServicioNoDisponible,
                          OperacionNoPermitida, FechaIncompatible)
 
-class Reserva:
+class Reserva(EntidadSistema):
     def __init__(self, cliente, servicio, fecha, hora_inicio, duracion_horas):
+        super().__init__()
         # Validamos los datos antes de guardar
         self.validar_datos(cliente, servicio, fecha, hora_inicio, duracion_horas)
         inicio = datetime.strptime(f"{fecha} {hora_inicio}", "%Y-%m-%d %H:%M")
@@ -134,27 +135,3 @@ class Reserva:
         # en una sola operacion
         return self.__inicio < otra.getFin() and otra.getInicio() < self.__fin
 
-# ==========================================
-# PRUEBAS PARA VER QUE FUNCIONA (Simulacion)
-# ==========================================
-if __name__ == "__main__":
-    print("\n--- PRUEBA 1: Reserva Exitosa ---")
-    # Simulamos un servicio (ya que no tenemos la clase aun)
-    servicio_sala = {"nombre": "Sala de Juntas", "disponible": True}
-    
-    try:
-        # Creamos la reserva
-        reserva1 = Reserva(cliente="Federico", servicio=servicio_sala, fecha="2026-11-20", hora_inicio="10:00", duracion_horas=2)
-        # Confirmamos
-        reserva1.confirmar_reserva()
-    except Exception as e:
-        print(f"El programa no se detuvo. Error controlado: {e}")
-
-    print("\n--- PRUEBA 2: Reserva Fallida (Servicio no disponible) ---")
-    servicio_equipo = {"nombre": "Computador", "disponible": False} # Falso para que falle
-    
-    try:
-        reserva2 = Reserva(cliente="Federico", servicio=servicio_equipo, fecha="2026-11-21", hora_inicio="14:00", duracion_horas=3)
-    except Exception as e:
-        # Aqui el programa atrapa el error y NO se cae
-        print(f"El programa no se detuvo. Error controlado: {e}")

@@ -20,15 +20,18 @@ class ServicioNoEncontrado(ErrorSistema):
     pass
 
 # Nuevas excepciones para Reservas
-class ReservaInvalida(Exception):
+class ReservaInvalida(ErrorSistema):
     """Se lanza cuando los datos de la reserva no son válidos."""
+    pass
+
+class ReservaNoEncontrada(ErrorSistema):
     pass
 
 class ServicioNoDisponible(ErrorSistema):
     """Se lanza cuando el servicio está inactivo o no disponible."""
     pass
 
-class OperacionNoPermitida(Exception):
+class OperacionNoPermitida(ErrorSistema):
     """Se lanza cuando se intenta hacer algo no permitido (ej. cancelar lo ya cancelado)."""
     pass
 

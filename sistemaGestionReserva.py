@@ -39,8 +39,8 @@ class SistemaGestionReserva:
                    f"en ese horario (reserva {existente.getIdEntidad()[:8]}).")
                 raise FechaIncompatible(
                     f"El servicio {reserva.getServicio().getNombre()} ya esta reservado en ese horario.")
-            return True
-        
+        return True
+
     def buscarReserva(self, identificacion):
         """Busca por id completo o por el comienzo del id (los primeros caracteres)."""
         identificacion = str(identificacion).strip()
