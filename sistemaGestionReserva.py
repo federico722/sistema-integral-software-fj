@@ -2,7 +2,7 @@
 from reserva import Reserva
 from logs import registrar_en_log
 from excepciones import (ReservaInvalida, ReservaNoEncontrada,
-                         ErrorValidacion, FechaIncompatible)
+                         ErrorValidacion, FechaIncompatible, OperacionNoPermitida)
 
 # estados en los que una reserva "ocupa" el servicio
 ESTADOS_ACTIVOS = ("Pendiente", "Confirmada")
@@ -72,6 +72,11 @@ class SistemaGestionReserva:
 
     def eliminarReserva(self, identificacion):
         reserva = self.obtenerReserva(identificacion)
+         # una reserva activa (Pendiente o Confirmada) no se borra: primero se cancela
+        if reserva.getEstado() in ESTADOS_ACTIVOS:
+            registrar_en_log(f"Eliminacion rechazada: la reserva {reserva.getIdEntidad()[:8]} "
+                         f"esta {reserva.getEstado()}.")
+            raise OperacionNoPermitida(f"No se puede eliminar una reserva {reserva.getEstado()}; cancelela primero.")
         self.__reservas.remove(reserva)
         registrar_en_log(f"EVENTO: reserva eliminada {reserva.getIdEntidad()[:8]}.")
         return True

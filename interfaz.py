@@ -256,7 +256,7 @@ class Interfaz:
         documento = self.solicitarTexto("Documento del cliente: ")
         servicio = self.solicitarTexto("Nombre del servicio: ")
         fecha = self.solicitarTexto("Fecha (AAAA-MM-DD): ")
-        hora = self.solicitarTexto("Hora de inicio (HH:MM): ")
+        hora = self.solicitarTexto("Hora de inicio (HH:MM, formato 24 h, ej: 13:30): ")
         duracion = self.solicitarNumero("Duracion en horas: ", float)
         reserva = self.__sistema.crearReserva(documento, servicio, fecha, hora, duracion)
         self.mostrarResultados("\nReserva creada (queda Pendiente):", self._formatearReserva(reserva))
