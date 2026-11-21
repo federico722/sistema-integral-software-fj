@@ -4,6 +4,7 @@ from logs import registrar_en_log, leer_log
 from sala import Sala
 from equipo import Equipo
 from Asesoria import Asesoria
+from SoporteTecnico import SoporteTecnico
 
 class Interfaz:
     """Menus por consola. Solo habla con SistemaGestion; no contiene reglas de negocio."""
@@ -108,6 +109,7 @@ class Interfaz:
             ("Registrar sala", lambda: self._registrarServicio("sala")),
             ("Registrar equipo", lambda: self._registrarServicio("equipo")),
             ("Registrar asesoria", lambda: self._registrarServicio("asesoria")),
+            ("Registrar soporte tecnico", lambda: self._registrarServicio("soporte")),
             ("Listar servicios", self._listarServicios),
             ("Cotizar el costo de un servicio", self._cotizarServicio),
             ("Eliminar servicio", self._eliminarServicio),
@@ -196,12 +198,17 @@ class Interfaz:
             tipo_equipo = self.solicitarTexto("Tipo de equipo: ")
             cantidad = self.solicitarNumero("Cantidad disponible: ", int)
             servicio = Equipo(nombre, descripcion, tarifa, disponible, estado, tipo_equipo, cantidad)
-        else:
+        elif tipo == "asesoria":
             especialidad = self.solicitarTexto("Especialidad: ")
             modalidad = self.solicitarTexto("Modalidad (Presencial/Virtual): ").capitalize()
             minutos = self.solicitarNumero("Duracion en minutos: ", int)
             servicio = Asesoria(nombre, descripcion, tarifa, disponible, estado,
                                 especialidad, modalidad, minutos)
+        elif tipo == "soporte":
+            tipo_equipo = self.solicitarTexto("Tipo de equipo: ")
+            tipo_soporte = self.solicitarTexto("Tipo de soporte (Preventivo/Correctivo/Urgente): ")
+            servicio = SoporteTecnico(nombre, descripcion, tarifa, disponible, estado,
+                                      tipo_equipo, tipo_soporte)
         # pendiente registrar otro servicio de reserva
 
         self.__sistema.obtenerGestorServicios().registrarServicio(servicio)
